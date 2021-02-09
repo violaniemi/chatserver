@@ -8,19 +8,27 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 
 
 public class ChatHandler implements HttpHandler {
 
     private String responseBody = "";
-    private ArrayList<String> messages = new ArrayList<String>();
+    private ArrayList<ChatMessage> messages;
 
     @Override
     public void handle(HttpExchange exchange) throws IOException{
@@ -71,7 +79,7 @@ public class ChatHandler implements HttpHandler {
             responseBody = "No content type in request";
             return code;
         }
-        if (contentType.equalsIgnoreCase("text/plain")){
+        if (contentType.equalsIgnoreCase("application/json")){
             InputStream stream = exchange.getRequestBody();
             String text = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8)).lines().collect(Collectors.joining("\n"));
             stream.close();
@@ -84,13 +92,29 @@ public class ChatHandler implements HttpHandler {
             }
         } else {
             code = 411;
-            responseBody = "Content-Type must be text/plain";
+            responseBody = "Content-Type must be application/json";
         }
         return code;
     }
 
     private void processMessage (String text) {
-        messages.add(text);
+        ChatMessage newMessage = new ChatMessage();
+        try{
+        JSONObject chatMessage = new JSONObject(text);
+        String dateStr = chatMessage.getString("sent");
+        OffsetDateTime odt = OffsetDateTime.parse(dateStr);
+        newMessage.sent = odt.toLocalDateTime();
+        messages.add(newMessage);
+        Collections.sort(messages, new Comparator<ChatMessage>() {
+            @Override
+            public int compare(ChatMessage lhs, ChatMessage rhs) {
+            return lhs.sent.compareTo(rhs.sent);
+            }
+            });
+        } catch (JSONException e) {
+            int code = 500;
+            responseBody = "JSON is not valid" +e.getMessage();
+        }
     }
 
     private int handleGetRequest(HttpExchange exchange) throws IOException, SQLException {
@@ -99,12 +123,23 @@ public class ChatHandler implements HttpHandler {
         if (messages.isEmpty()) {
             code = 204;
             exchange.sendResponseHeaders(code, -1);
-            return code;
+        } else {
+            try{
+                JSONArray responseMessages = new JSONArray();
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MMdd'T'HH:mm:ss.SSSX");
+                for (ChatMessage message : messages){
+                    JSONObject jsonMessage = new JSONObject();
+                    jsonMessage.put("user", message.nick);
+                    jsonMessage.put("message", message.message);
+                    jsonMessage.put("sent", message.sent);
+                    responseMessages.put(jsonMessage);
+                }
+            } catch(JSONException e){
+                code = 500;
+                responseBody = "JSON is not valid" +e.getMessage();
+            }
         }
-        responseBody = "";
-        for (String message : messages){
-            responseBody += message + "\n";
-        }
+        
 
         byte [] bytes;
         bytes = responseBody.toString().getBytes("UTF-8");

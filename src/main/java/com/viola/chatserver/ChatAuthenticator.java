@@ -7,27 +7,26 @@ import com.sun.net.httpserver.BasicAuthenticator;
 
 public class ChatAuthenticator extends BasicAuthenticator {
 
-    private Map<String, String> users = null;
+    private Map<String, User> users = null;
 
     public ChatAuthenticator() {
         super("chat");
-        users = new Hashtable<String,String>();
-        users.put("dummy", "passwd");
+        users = new Hashtable<String, User>();
     }
 
     @Override
     public boolean checkCredentials(String username, String password) {
         if (users.containsKey(username)) {
-            if(users.get(username).equals(password)){
+            if(users.get(username).getPassword().equals(password)){
             return true;
             }
         }
         return false;
     }
 
-    public boolean addUser(String userName, String password) {
+    public boolean addUser(String userName, User user) {
         if(!users.containsKey(userName)){
-            users.put(userName, password);
+            users.put(userName, user);
             return true;
         }
         return false;
