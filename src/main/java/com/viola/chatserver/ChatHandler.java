@@ -8,7 +8,10 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -97,53 +100,70 @@ public class ChatHandler implements HttpHandler {
         return code;
     }
 
-    private void processMessage (String text) {
-        ChatMessage newMessage = new ChatMessage();
+    private int processMessage (String text) {
+        int code = 200;
+
         try{
         JSONObject chatMessage = new JSONObject(text);
+        ChatMessage newMessage = new ChatMessage();
+        newMessage.nick = chatMessage.getString("user");
+        newMessage.message = chatMessage.getString ("message"); 
         String dateStr = chatMessage.getString("sent");
         OffsetDateTime odt = OffsetDateTime.parse(dateStr);
         newMessage.sent = odt.toLocalDateTime();
-        messages.add(newMessage);
-        Collections.sort(messages, new Comparator<ChatMessage>() {
+        long sent = newMessage.dateAsInt();
+        String nick = newMessage.nick;
+        String message = newMessage.message;
+        ChatDatabase.getInstance().insertMessage(nick, message, sent);
+        System.out.println("viesti lähetetty");
+        //messages.add(newMessage);
+        /*Collections.sort(messages, new Comparator<ChatMessage>() {
             @Override
             public int compare(ChatMessage lhs, ChatMessage rhs) {
             return lhs.sent.compareTo(rhs.sent);
             }
-            });
+            });*/
         } catch (JSONException e) {
-            int code = 500;
+            code = 500;
             responseBody = "JSON is not valid" +e.getMessage();
         }
+        return code;
     }
 
     private int handleGetRequest(HttpExchange exchange) throws IOException, SQLException {
         int code = 200;
+        JSONArray responseMessages = new JSONArray();
+
+       messages = ChatDatabase.getInstance().readMessages(); 
 
         if (messages.isEmpty()) {
             code = 204;
             exchange.sendResponseHeaders(code, -1);
         } else {
             try{
-                JSONArray responseMessages = new JSONArray();
-                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MMdd'T'HH:mm:ss.SSSX");
                 for (ChatMessage message : messages){
                     JSONObject jsonMessage = new JSONObject();
                     jsonMessage.put("user", message.nick);
+                    System.out.println(message.nick);
                     jsonMessage.put("message", message.message);
-                    jsonMessage.put("sent", message.sent);
+                    System.out.println(message.message);
+                    LocalDateTime date = message.sent;
+                    ZonedDateTime now = ZonedDateTime.of(date, ZoneId.of("UTC"));
+                    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX");
+                    String dateString = now.format(formatter);
+                    jsonMessage.put("sent", dateString);
                     responseMessages.put(jsonMessage);
                 }
             } catch(JSONException e){
                 code = 500;
                 responseBody = "JSON is not valid" +e.getMessage();
             }
-        }
         
+        }
 
         byte [] bytes;
-        bytes = responseBody.toString().getBytes("UTF-8");
-        exchange.sendResponseHeaders(code, bytes.length);
+        bytes = responseMessages.toString().getBytes("UTF-8");
+        exchange.sendResponseHeaders(code, bytes.length); 
         OutputStream os = exchange.getResponseBody();
         os.write(bytes);
         os.close();

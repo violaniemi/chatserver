@@ -77,13 +77,13 @@ public class RegistrationHandler implements HttpHandler {
         code = 500;
         responseBody = "Server error: \n" + e.getMessage();
     }
-    if(code >= 400){
+    //if(code >= 400){
         byte [] bytes = responseBody.getBytes("UTF-8");
         exchange.sendResponseHeaders(code, bytes.length);
         OutputStream os = exchange.getResponseBody();
         os.write(bytes);
         os.close();
-        }
+      //  } 
     }
     
 } 
