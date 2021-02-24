@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.util.concurrent.Executors;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -48,6 +49,7 @@ public class ChatServer
             chatContext.setAuthenticator(auth);
             server.createContext("/registration", new RegistrationHandler(auth));
             server.setExecutor(null);
+            //server.setExecutor(Executors.newCachedThreadPool());
             server.start();
         } catch (IOException e) {
             e.printStackTrace();

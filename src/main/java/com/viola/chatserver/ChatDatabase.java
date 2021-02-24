@@ -6,12 +6,17 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
 import java.io.File;
+import java.security.SecureRandom;
+
+import org.apache.commons.codec.digest.Crypt;
 
 public class ChatDatabase {
 
     Connection connection;
+    SecureRandom secureRandom = new SecureRandom();
     
     private static ChatDatabase singleton = null;
 
@@ -71,7 +76,16 @@ public class ChatDatabase {
         
         
         if(checkUser(userName) == true){
-            String insertUserString = "insert into users " +  "VALUES ('"+userName+"', '"+password+"', '"+email+"')"; 
+    
+            //hashaa salasanan
+            byte bytes[] = new byte[13];
+            secureRandom.nextBytes(bytes);
+            String saltBytes = new String(Base64.getEncoder().encode(bytes));
+            String salt = "$6$" + saltBytes;
+            String hashedPassword = Crypt.crypt(password, salt);
+
+            //tallentaa käyttäjän tiedot ja hashatyn salasanan tietokantaan
+            String insertUserString = "insert into users " +  "VALUES ('"+userName+"', '"+hashedPassword+"', '"+email+"')"; 
             Statement createStatement;
             createStatement = connection.createStatement();
             createStatement.executeUpdate(insertUserString);
@@ -117,7 +131,9 @@ public class ChatDatabase {
             while(rs.next()){
                 String dbusername = rs.getString("username");
                 String dbpassword = rs.getString("password");
-                if(dbusername.equals(username) && dbpassword.equals(password)){
+                String hashedPassword = Crypt.crypt(password, dbpassword);
+                
+                if(dbusername.equals(username) && dbpassword.equals(Crypt.crypt(password, dbpassword))){
                     System.out.println("authorisointi onnistui");
                     return true;
                 }
@@ -144,11 +160,11 @@ public class ChatDatabase {
         }
     }
 
-    public ArrayList<ChatMessage> readMessages(){
+    public ArrayList<ChatMessage> readMessages(long since){
         ArrayList<ChatMessage> messages = null;
-        String query = "SELECT nickname, message, timestamp FROM messages";
+        String query = "SELECT nickname, message, timestamp FROM messages WHERE (timestamp > '"+ since +"')";
         Statement createStatement;
-    
+        
         try {
             createStatement = connection.createStatement();
             ResultSet rs = createStatement.executeQuery(query);
