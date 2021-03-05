@@ -2,10 +2,12 @@ package com.viola.chatserver;
 
 import com.sun.net.httpserver.HttpServer;
 
+import java.io.Console;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.KeyStore;
+import java.sql.SQLException;
 import java.util.concurrent.Executors;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -23,10 +25,8 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsParameters;
 
-/**
- * Hello world!
- *
- */
+
+
 public class ChatServer
 {
     public static void main( String[] args ) throws Exception {
@@ -51,7 +51,20 @@ public class ChatServer
             server.setExecutor(null);
             //server.setExecutor(Executors.newCachedThreadPool());
             server.start();
+            Console cnsl = System.console();
+            boolean running = true;
+            while (running == true){
+                String line = cnsl.readLine();
+                if(line.equals("/quit")){
+                    running = false;
+                    server.stop(3);
+                    database.close();
+                }
+            }
         } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        } catch (SQLException e) {
             e.printStackTrace();
             return;
         }

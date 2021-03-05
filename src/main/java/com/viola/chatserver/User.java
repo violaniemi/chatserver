@@ -4,9 +4,10 @@ import java.util.Hashtable;
 import java.util.Map;
 
 public class User {
-    String username;
-    String password;
-    String email;
+
+    private String username;
+    private String password;
+    private String email;
 
     public User(){
     this.username = username;

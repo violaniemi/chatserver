@@ -30,12 +30,14 @@ import org.json.JSONObject;
 
 public class ChatHandler implements HttpHandler {
 
-    private String responseBody = "";
-    private ArrayList<ChatMessage> messages;
+
+    //System.out.println("Request handled in thread" + 
+    //Thread.currentThread().getId());
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {
         int code = 200;
+        String responseBody = "";
 
         try {
             if (exchange.getRequestMethod().equalsIgnoreCase("POST")) {
@@ -69,6 +71,8 @@ public class ChatHandler implements HttpHandler {
         Headers headers = exchange.getRequestHeaders();
         int contentLength = 0;
         String contentType = "";
+        String responseBody = "";
+
         if (headers.containsKey("Content-Length")) {
             contentLength = Integer.parseInt(headers.get("Content-Length").get(0));
         } else {
@@ -103,6 +107,7 @@ public class ChatHandler implements HttpHandler {
 
     private int processMessage(String text) {
         int code = 200;
+        String responseBody = "";
 
         try {
             JSONObject chatMessage = new JSONObject(text);
@@ -127,6 +132,9 @@ public class ChatHandler implements HttpHandler {
     private int handleGetRequest(HttpExchange exchange) throws IOException, SQLException {
         int code = 200;
         JSONArray responseMessages = new JSONArray();
+        String responseBody = "";
+        ArrayList<ChatMessage> messages;
+
         DateTimeFormatter httpDateFormatter = DateTimeFormatter
                 .ofPattern("EEE, dd MMM yyyy HH:mm:ss.SSS z", Locale.ENGLISH).withZone(ZoneId.of("GMT"));
         LocalDateTime newest = null;
@@ -141,8 +149,7 @@ public class ChatHandler implements HttpHandler {
             messagesSince = fromWhichDate.toInstant(ZoneOffset.UTC).toEpochMilli();
             messages = ChatDatabase.getInstance().readMessages(messagesSince);
         } else {
-            // get all messages
-            System.out.println("ei if modified since headeria");
+            // hakee kaikki viestit, keksi myöhemmin joku rajaus
             messages = ChatDatabase.getInstance().readMessages(0);
         }
 

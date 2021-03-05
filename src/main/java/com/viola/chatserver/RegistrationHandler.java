@@ -18,11 +18,14 @@ import org.json.JSONObject;
 
 public class RegistrationHandler implements HttpHandler {
 
-    ChatAuthenticator auth = null;
+    final ChatAuthenticator auth;
 
     public RegistrationHandler(ChatAuthenticator authenticator) {
         this.auth = authenticator;
     }
+
+    //System.out.println("Request handled in thread" + 
+    //Thread.currentThread().getId());
 
     @Override
     public void handle(HttpExchange exchange) throws IOException {

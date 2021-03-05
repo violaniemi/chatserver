@@ -16,7 +16,7 @@ import org.apache.commons.codec.digest.Crypt;
 public class ChatDatabase {
 
     Connection connection;
-    SecureRandom secureRandom = new SecureRandom();
+    final SecureRandom secureRandom = new SecureRandom();
     
     private static ChatDatabase singleton = null;
 
@@ -38,6 +38,10 @@ public class ChatDatabase {
         if (b==false){
         initializeDatabase();
         }
+    }
+
+    public void close() throws SQLException {
+        connection.close();
     }
 
     public boolean initializeDatabase(){
