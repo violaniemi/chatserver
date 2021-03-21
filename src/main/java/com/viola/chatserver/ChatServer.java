@@ -30,7 +30,6 @@ import com.sun.net.httpserver.HttpsParameters;
 public class ChatServer
 {
     public static void main( String[] args ) throws Exception {
-       // System.out.println("hello");
        try {
             ChatDatabase database = ChatDatabase.getInstance();
             database.open(args[0]);
@@ -48,8 +47,7 @@ public class ChatServer
             HttpContext chatContext = server.createContext("/chat", new ChatHandler());
             chatContext.setAuthenticator(auth);
             server.createContext("/registration", new RegistrationHandler(auth));
-            server.setExecutor(null);
-            //server.setExecutor(Executors.newCachedThreadPool());
+            server.setExecutor(Executors.newCachedThreadPool());
             server.start();
             Console cnsl = System.console();
             boolean running = true;
@@ -86,4 +84,8 @@ public class ChatServer
 
         return(ssl);
     }
+
+	public static void log(String string) {
+        System.out.println(string);
+	}
 }

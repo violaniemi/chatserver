@@ -15,8 +15,14 @@ public class ChatAuthenticator extends BasicAuthenticator {
     }
 
     @Override
-    public boolean checkCredentials(String username, String password) {
-        boolean b = ChatDatabase.getInstance().authUser(username, password);
+    public boolean checkCredentials(String username, String password)  {
+        boolean b=false;
+        try {
+            b = ChatDatabase.getInstance().authUser(username, password);
+        } catch (SQLException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
         return b;
     }
 
